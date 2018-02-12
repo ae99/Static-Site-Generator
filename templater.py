@@ -92,26 +92,15 @@ def construct_tree(nodes, escapeRegex = None):
     group = GroupNode()
     while len(nodes) > 0:
         curretNode = nodes.pop(0)
-        print("ITERATION:", escapeRegex, curretNode)
         if (escapeRegex != None and re.match(escapeRegex, curretNode) != None):
             return group
-
-        if re.match(regexes['for'], curretNode) != None:
+        elif re.match(r'{%\s*for\s+(.+)\s+in\s+(.+)\s*%}', curretNode) != None:
             curretNode = curretNode[2:-2].strip()[3:].strip().split('in')
-            # print("BEFORE: ", nodes)
-            group.addChild(ForNode(
-              curretNode[0].strip(),
-              curretNode[1].strip(),
-              construct_tree(nodes, regexes['endfor'])
-            ))
-            # print("AFTER", nodes)
-        elif re.match(regexes['if'], curretNode) != None:
+            group.addChild(ForNode(curretNode[0].strip(),curretNode[1].strip(), construct_tree(nodes, r'{%\s*endfor\s*%}')))
+        elif re.match(r'{%\s*if\s+(.+)\s*%}', curretNode) != None:
             curretNode = curretNode[2:-2].strip()[3:].strip()
-            group.addChild(IfNode(
-                curretNode,
-                construct_tree(nodes, regexes['endif'])
-            ))
-        elif re.match(regexes['expr'], curretNode) != None:
+            group.addChild(IfNode(curretNode, construct_tree(nodes, r'{%\s*endif\s*%}')))
+        elif re.match(r'{{\s*(.+)\s*}}', curretNode) != None:
             group.addChild(PythonNode(curretNode[2:-2]))
         else:
             group.addChild(TextNode(curretNode))
