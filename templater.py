@@ -3,11 +3,13 @@ import html
 example_doc = """
 <html>
 {{name}}
-{% for item in range(0,10) %}
-    {% if item > 4 %}
-        {{name + str(item)}}
-    {% endif %}
-{% endfor %}
+    <ul>
+    {% for item in range(0,10) %}
+        {% if item > 4 %}
+            <li>{{name + str(item)}}</li>
+        {% endif %}
+    {% endfor %}
+    </ul>
 </html>
 """
 
@@ -32,7 +34,8 @@ class TextNode(Node):
     thisText.evaluate()
     """
     def __init__(self, value):
-        self.value = value
+        self.value = value.strip()
+
 
     def evaluate(self, context):
         return str(self.value)
@@ -96,7 +99,7 @@ def construct_tree(nodes, escapeRegex = None):
             return group
         elif re.match(r'{%\s*for\s+(.+)\s+in\s+(.+)\s*%}', curretNode) != None:
             curretNode = curretNode[2:-2].strip()[3:].strip().split('in')
-            group.addChild(ForNode(curretNode[0].strip(),curretNode[1].strip(), construct_tree(nodes, r'{%\s*endfor\s*%}')))
+            group.addChild(ForNode(curretNode[0].strip(), curretNode[1].strip(), construct_tree(nodes, r'{%\s*endfor\s*%}')))
         elif re.match(r'{%\s*if\s+(.+)\s*%}', curretNode) != None:
             curretNode = curretNode[2:-2].strip()[3:].strip()
             group.addChild(IfNode(curretNode, construct_tree(nodes, r'{%\s*endif\s*%}')))
@@ -112,4 +115,4 @@ def template_to_string(template, context):
     return tree.evaluate(context)
 
 
-print(template_to_string(example_doc, {'name': "Alex!"}))
+# print(template_to_string(example_doc, {'name': "Alex!"}))
