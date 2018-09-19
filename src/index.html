@@ -1,6 +1,11 @@
 <html>
-{{name}}
-    <ul>
+    {{name}}
+    {{name + " Test "}}
+    {$
+        test = "Hello"
+    $}
+    {{" ".join([test for i in range(10)])}}
+<ul>
     {% for item in range(0,10) %}
         {% if item > 4 %}
             <li>{{name + str(item)}}</li>

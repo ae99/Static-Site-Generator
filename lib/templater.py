@@ -1,27 +1,5 @@
 import re
 import html
-example_doc = """
-<html>
-{{name}}
-    <ul>
-    {% for item in range(0,10) %}
-        {% if item > 4 %}
-            <li>{{name + str(item)}}</li>
-        {% endif %}
-    {% endfor %}
-    </ul>
-</html>
-"""
-
-regexes = {
-    'include': r'{%\s*(include\s+(\w+\.\w+))\s*%}',
-    'if': r'{%\s*if\s+(.+)\s*%}',
-    'endif': r'{%\s*endif\s*%}',
-    'for': r'{%\s*for\s+(.+)\s+in\s+(.+)\s*%}',
-    'endfor': r'{%\s*endfor\s*%}',
-    'expr': r'{{\s*(.+)\s*}}',
-}
-
 
 class Node:
     def evaluate(self):
@@ -55,12 +33,27 @@ class GroupNode(Node):
 
         return theString
 
+class VariableNode(Node):
+    def __init__(self, value):
+        self.value = value
+
+    def evaluate(self, context):
+        print(self.value, "----", context)
+        return html.escape(str(eval(self.value, context.copy(), context)))
+
 class PythonNode(Node):
     def __init__(self, value):
         self.value = value
 
     def evaluate(self, context):
-        return html.escape(str(eval(self.value, {}, context)))
+        # Adjust for whitespace
+        try:
+            remove = re.match(r'^\s*', self.value).group().split('\n')[-1]
+            self.value = self.value[len(remove)+1:].replace('\n' + remove , '\n')
+        except AttributeError:
+            pass
+        exec(self.value, {}, context)
+        return ""
 
 
 class IfNode(Node):
@@ -104,15 +97,16 @@ def construct_tree(nodes, escapeRegex = None):
             curretNode = curretNode[2:-2].strip()[3:].strip()
             group.addChild(IfNode(curretNode, construct_tree(nodes, r'{%\s*endif\s*%}')))
         elif re.match(r'{{\s*(.+)\s*}}', curretNode) != None:
+            group.addChild(VariableNode(curretNode[2:-2]))
+        elif re.match(r'{\$\s*((.|\n)+)\s*\$}', curretNode) != None:
             group.addChild(PythonNode(curretNode[2:-2]))
         else:
             group.addChild(TextNode(curretNode))
     return group
 
 def template_to_string(template, context):
-    nodes = re.split(r'({%.*%}|{{.*}})', template)
+    splitter = re.compile(r'({%.*?%}|{{.*?}}|{\$.*?\$})', re.DOTALL)
+    nodes = re.split(splitter, template)
     tree = construct_tree(nodes)
     return tree.evaluate(context)
 
-
-# print(template_to_string(example_doc, {'name': "Alex!"}))
