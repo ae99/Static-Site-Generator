@@ -1,5 +1,3 @@
-# Project Title
-
 # Static Site Generator
 This is a static site generator which can be used to construct full static html sites from markdown documents and html templates.
 
